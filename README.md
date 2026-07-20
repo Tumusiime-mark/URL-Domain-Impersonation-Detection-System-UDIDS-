@@ -1,6 +1,6 @@
 # Domain Impersonation Detection System (DIDS)
 
-> A proactive cybersecurity platform for detecting domain impersonation, phishing infrastructure, typosquatting, homograph attacks, and brand abuse.
+> **A proactive cybersecurity platform for detecting domain impersonation, phishing infrastructure, typosquatting, homograph attacks, and brand abuse before they impact organizations.**
 
 ![Python](https://img.shields.io/badge/Python-3.x-blue)
 ![Flask](https://img.shields.io/badge/Framework-Flask-green)
@@ -9,56 +9,67 @@
 
 ---
 
-## Overview
+# Domain Impersonation Detection System (DIDS)
 
-The **Domain Impersonation Detection System (DIDS)** is a cybersecurity solution that continuously monitors the internet for domains attempting to impersonate an organization's legitimate domain. It enables security teams to detect phishing domains, fraudulent websites, brand abuse, typosquatting, and homograph attacks before they can be used against customers or employees.
+The **Domain Impersonation Detection System (DIDS)** is an advanced cybersecurity platform developed to help organizations proactively identify domains that imitate or closely resemble legitimate domains. These deceptive domains are commonly used in phishing attacks, credential theft, malware delivery, business email compromise (BEC), and brand impersonation.
 
----
-
-## Problem Statement
-
-Cybercriminals frequently register deceptive domains that closely resemble legitimate brands. These malicious domains are commonly used for:
-
-- Phishing attacks
-- Credential theft
-- Malware distribution
-- Business email compromise (BEC)
-- Brand impersonation
-- Financial fraud
-
-Many organizations only discover these domains after users have already been affected.
+DIDS continuously monitors suspicious domains, performs similarity analysis, inspects DNS and SSL configurations, analyzes website content, and calculates risk scores to help security teams detect and investigate threats before they are exploited.
 
 ---
 
-## Objectives
+# Problem Statement
+
+Every day, attackers register fraudulent domains that resemble trusted organizations. These domains are used to deceive users into disclosing sensitive information, installing malware, or making fraudulent payments.
+
+Examples include:
+
+```
+google.com
+gooogle.com
+g00gle.com
+goog1e.com
+google-login.com
+```
+
+Organizations often become aware of these domains only after customers or employees have already been targeted.
+
+DIDS addresses this challenge through automated discovery, analysis, and continuous monitoring.
+
+---
+
+# Objectives
+
+The project aims to:
 
 - Detect domains similar to legitimate domains
 - Identify typosquatting attacks
 - Detect Unicode homograph attacks
-- Monitor suspicious newly registered domains
-- Analyze DNS configurations
-- Inspect SSL certificates
-- Compare website content
-- Calculate domain risk scores
+- Monitor newly registered suspicious domains
+- Analyze WHOIS registration information
+- Inspect DNS records
+- Analyze SSL certificates
+- Compare website content and branding
+- Calculate threat risk scores
 - Generate automated alerts
 - Provide centralized monitoring and reporting
 
 ---
 
-# Features
+# Key Features
 
 ## Domain Discovery
 
-- Domain enumeration
 - Similar domain generation
+- Domain permutation analysis
 - Newly registered domain monitoring
 - Brand keyword detection
+- Continuous monitoring
 
 ---
 
-## Similarity Detection
+## Domain Similarity Detection
 
-The system detects look-alike domains using:
+The similarity engine uses multiple algorithms including:
 
 - Levenshtein Distance
 - Jaro-Winkler Similarity
@@ -71,49 +82,50 @@ The system detects look-alike domains using:
 Example:
 
 ```
-google.com
+bankofuganda.go.ug
 
-gooogle.com
-goggle.com
-goog1e.com
-g00gle.com
-google-login.com
+bankofugandaa.go.ug
+bank0fuganda.go.ug
+bnkofuganda.go.ug
+bankof-uganda.com
 ```
 
 ---
 
-## Homograph Detection
+## Homograph Attack Detection
 
-Detects Unicode characters used to imitate legitimate domains.
+Detects deceptive Unicode characters that visually resemble normal characters.
 
 Example:
 
 ```
-google.com
+apple.com
 
-gοοgle.com
+аррӏе.com
 ```
 
-(The two "o" characters above are different Unicode characters.)
+Although these domains appear identical, they contain different Unicode characters.
 
 ---
 
 ## WHOIS Analysis
 
-Analyzes:
+The system extracts and analyzes:
 
+- Registrar
 - Registration date
 - Domain age
-- Registrar
-- Registrant privacy
 - Expiration date
+- Registrant privacy
 - Name servers
+
+Domains registered recently receive higher risk scores.
 
 ---
 
 ## DNS Analysis
 
-Inspects:
+Analyzes:
 
 - A Records
 - AAAA Records
@@ -122,51 +134,53 @@ Inspects:
 - NS Records
 - CNAME Records
 
-Detects suspicious infrastructure and misconfigurations.
+Detects suspicious DNS configurations and hosting infrastructure.
 
 ---
 
 ## SSL Certificate Analysis
 
-Checks:
+Examines:
 
 - Certificate issuer
-- Certificate validity
-- Expiration
+- Validity period
 - Certificate age
 - Self-signed certificates
-- Suspicious issuers
+- Expiration
+- Certificate chain
 
 ---
 
 ## Website Analysis
 
-Analyzes websites by:
+Performs:
 
-- Capturing screenshots
-- Detecting login forms
-- Comparing logos
-- Comparing page layouts
-- Identifying phishing indicators
-- Comparing HTML structure
+- Screenshot capture
+- Logo comparison
+- Login form detection
+- HTML similarity comparison
+- Phishing indicator detection
+- Page layout comparison
 
 ---
 
 ## Risk Scoring Engine
 
-Each detected domain receives a risk score based on:
+Each detected domain is assigned a risk score using multiple indicators.
+
+Factors include:
 
 - Domain similarity
-- Domain age
+- Registration age
+- SSL certificate trust
 - DNS configuration
-- SSL certificate
 - Website similarity
-- Threat indicators
+- Threat intelligence indicators
 
-Example:
+### Risk Levels
 
-| Risk Score | Severity |
-|------------|----------|
+| Score | Severity |
+|--------|----------|
 | 0–30 | Low |
 | 31–60 | Medium |
 | 61–80 | High |
@@ -174,99 +188,80 @@ Example:
 
 ---
 
-## Alerting
+## Alerting System
 
-Generate alerts through:
+Supports:
 
 - Dashboard notifications
-- Email
-- SMS
-- SIEM integrations
+- Email alerts
+- SMS alerts
+- SIEM integration
 - SOC notifications
 
 ---
 
-## Dashboard
+# Dashboard
 
-The dashboard provides:
+The web dashboard provides:
 
 - Protected domains
-- Suspicious domains
+- Newly detected domains
 - Risk trends
-- Screenshots
-- Investigation queue
-- Alerts
+- Investigation management
+- Website screenshots
 - Reports
 - Analytics
+- Alert history
+- User management
 
 ---
 
 # System Architecture
 
 ```
-                    +----------------------+
-                    | Protected Domains    |
-                    +----------+-----------+
-                               |
-                               v
-                   +------------------------+
-                   | Domain Generator       |
-                   +-----------+------------+
-                               |
-                               v
-                  +-------------------------+
-                  | Domain Discovery Engine |
-                  +-----------+-------------+
-                              |
-        +---------------------+----------------------+
-        |                     |                      |
-        v                     v                      v
-+---------------+     +----------------+     +----------------+
-| WHOIS Module  |     | DNS Analyzer   |     | SSL Analyzer   |
-+---------------+     +----------------+     +----------------+
-        |                     |                      |
-        +----------+----------+----------+-----------+
-                   |                     |
-                   v                     v
-          +--------------------------------------+
-          | Similarity Analysis Engine           |
-          +------------------+-------------------+
-                             |
-                             v
-                 +-----------------------------+
-                 | Website Analysis            |
-                 +-------------+---------------+
-                               |
-                               v
-                 +-----------------------------+
-                 | Risk Scoring Engine         |
-                 +-------------+---------------+
-                               |
-                               v
-                 +-----------------------------+
-                 | Alerting Engine             |
-                 +-------------+---------------+
-                               |
-                               v
-                 +-----------------------------+
-                 | Dashboard & Database        |
-                 +-----------------------------+
+                        Protected Domains
+                                │
+                                ▼
+                    Domain Generation Engine
+                                │
+                                ▼
+                    Domain Discovery Engine
+                                │
+        ┌───────────────┬───────────────┬───────────────┐
+        ▼               ▼               ▼
+   WHOIS Module     DNS Analysis     SSL Analysis
+        │               │               │
+        └───────────────┼───────────────┘
+                        ▼
+            Similarity Analysis Engine
+                        │
+                        ▼
+             Website Analysis Module
+                        │
+                        ▼
+               Risk Scoring Engine
+                        │
+                        ▼
+                 Alert Management
+                        │
+                        ▼
+            Dashboard & Database System
 ```
 
 ---
 
 # Database Design
 
-Main tables:
+Main database tables include:
 
 - domains
 - detected_domains
-- users
 - alerts
 - investigations
 - screenshots
-- risk_assessments
+- users
 - audit_logs
+- risk_assessments
 
 ---
 
@@ -299,9 +294,9 @@ Main tables:
 
 ## Similarity Libraries
 
-- python-Levenshtein
-- Jellyfish
 - RapidFuzz
+- Jellyfish
+- python-Levenshtein
 
 ---
 
@@ -309,20 +304,19 @@ Main tables:
 
 DIDS can integrate with:
 
-- Splunk
 - Microsoft Sentinel
+- Splunk
+- IBM QRadar
 - Wazuh
 - ELK Stack
-- IBM QRadar
-- SOAR platforms
-- Email gateways
-- Threat intelligence feeds
+- SOAR Platforms
+- Threat Intelligence Platforms
 
 ---
 
 # Reporting
 
-Generate:
+Automatically generates:
 
 - Daily reports
 - Weekly reports
@@ -336,11 +330,11 @@ Generate:
 # Security Features
 
 - Role-Based Access Control (RBAC)
-- Authentication
-- Audit logging
-- Secure communications (HTTPS/TLS)
-- Encrypted data storage
-- Session management
+- User Authentication
+- Audit Logging
+- Secure HTTPS Communication
+- Encrypted Data Storage
+- Session Management
 
 ---
 
@@ -361,11 +355,11 @@ DIDS/
 │   ├── risk/
 │   └── reports/
 │
-├── static/
-├── templates/
 ├── database/
 ├── screenshots/
 ├── reports/
+├── static/
+├── templates/
 ├── config.py
 ├── requirements.txt
 ├── run.py
@@ -376,33 +370,33 @@ DIDS/
 
 # Expected Benefits
 
-- Early phishing detection
-- Brand protection
+- Early detection of phishing domains
+- Protection against brand impersonation
 - Reduced fraud risk
 - Improved incident response
-- Centralized visibility
+- Enhanced organizational cybersecurity
 - Continuous domain monitoring
-- Faster investigations
-- Enhanced organizational security
+- Faster threat investigations
 
 ---
 
 # Future Enhancements
 
-- Machine learning-based risk classification
-- Certificate Transparency (CT) log monitoring
-- Threat intelligence feed integration
-- Automated domain takedown workflows
-- Global domain monitoring
-- Passive DNS integration
+- Machine Learning risk prediction
 - AI-powered phishing detection
-- Real-time browser fingerprinting
+- Certificate Transparency (CT) monitoring
+- Passive DNS integration
+- Threat intelligence feeds
+- Automated takedown workflows
+- Global domain monitoring
+- Dark web monitoring
+- Real-time notification services
 
 ---
 
 # Contributing
 
-Contributions are welcome. Feel free to submit issues, feature requests, or pull requests to improve the project.
+Contributions, feature requests, bug reports, and pull requests are welcome. Please open an issue to discuss significant changes before submitting a pull request.
 
 ---
 
@@ -412,8 +406,42 @@ This project is licensed under the **MIT License**.
 
 ---
 
-# Author
+# Developer
 
-**Domain Impersonation Detection System (DIDS)**
+**Tumusiime Mark**
 
-A cybersecurity project focused on proactive detection of domain impersonation, phishing campaigns, typosquatting, homograph attacks, and brand abuse through automated monitoring, similarity analysis, and risk assessment.
+Digital Forensics & Information Security Analyst
+
+📍 Uganda
+
+📧 Email: **tumusiimemail@gmail.com**
+
+**Areas of Expertise**
+
+- Digital Forensics
+- Cybersecurity
+- Threat Intelligence
+- Malware Analysis
+- Incident Response
+- Security Operations (SOC)
+- Network Security
+- Python Development
+- Secure System Design
+
+---
+
+## Contact
+
+For collaborations, research, cybersecurity projects, or professional inquiries:
+
+**Tumusiime Mark**
+
+**Digital Forensics & Information Security Analyst**
+
+📧 **tumusiimemail@gmail.com**
+
+📍 **Uganda**
+
+---
+
+> **Domain Impersonation Detection System (DIDS)** was developed to help organizations proactively detect, investigate, and mitigate phishing domains, brand impersonation, typosquatting, homograph attacks, and other domain-based cyber threats before they can be exploited.
