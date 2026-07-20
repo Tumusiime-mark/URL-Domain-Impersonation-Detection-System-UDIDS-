@@ -1,0 +1,2125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Domain Impersonation Detection System</title>
+  <style>
+    :root {
+      --bg: #f4f7f8;
+      --surface: #ffffff;
+      --surface-2: #eef3f4;
+      --ink: #17212b;
+      --muted: #657481;
+      --line: #d7e0e4;
+      --teal: #0f766e;
+      --teal-dark: #115e59;
+      --amber: #b54708;
+      --red: #b42318;
+      --blue: #1d4ed8;
+      --green: #15803d;
+      --shadow: 0 10px 30px rgba(23, 33, 43, .08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+    button, input, select, textarea {
+      font: inherit;
+    }
+    button {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      min-height: 36px;
+      padding: 7px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover { border-color: #9fb1ba; }
+    button.primary {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
+    button.primary:hover { background: var(--teal-dark); }
+    button.danger { color: var(--red); }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 8px 9px;
+      outline: none;
+    }
+    textarea { min-height: 104px; resize: vertical; }
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0 0 5px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+    }
+    .sidebar {
+      background: #18252e;
+      color: #dce6ea;
+      padding: 18px 14px;
+      border-right: 1px solid #101b22;
+    }
+    .brand {
+      padding: 4px 8px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      margin-bottom: 14px;
+    }
+    .brand strong {
+      display: block;
+      color: #fff;
+      font-size: 18px;
+      line-height: 1.15;
+    }
+    .brand img {
+      display: block;
+      max-width: 84px;
+      max-height: 84px;
+      object-fit: contain;
+      margin: 0 0 10px;
+    }
+    .brand span {
+      display: block;
+      color: #9eb0b8;
+      font-size: 12px;
+      margin-top: 7px;
+    }
+    .nav {
+      display: grid;
+      gap: 6px;
+    }
+    .nav button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      border: 0;
+      background: transparent;
+      color: #cfdae0;
+      padding: 10px 10px;
+      min-height: 42px;
+    }
+    .nav button:hover,
+    .nav button.active {
+      background: rgba(255,255,255,.09);
+      color: #fff;
+    }
+    .nav .icon {
+      width: 20px;
+      text-align: center;
+      color: #84d2cb;
+    }
+    main {
+      min-width: 0;
+      padding: 18px;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .topbar h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+    .topbar p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .view { display: none; }
+    .view.active { display: block; }
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+    .metrics {
+      grid-template-columns: repeat(4, minmax(145px, 1fr));
+    }
+    .two {
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+    .card-header {
+      min-height: 48px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .card-header h2 {
+      margin: 0;
+      font-size: 15px;
+      text-align: center;
+      flex: 1;
+    }
+    .card-body { padding: 14px; }
+    .metric {
+      padding: 14px;
+      min-height: 104px;
+    }
+    .metric b {
+      display: block;
+      font-size: 30px;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr)) minmax(120px, auto);
+      gap: 10px;
+      align-items: end;
+    }
+    .form-grid > button {
+      align-self: end;
+      justify-self: start;
+      width: 100%;
+      min-width: 120px;
+    }
+    .form-grid.settings {
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+    }
+    .scan-grid {
+      display: grid;
+      grid-template-columns: minmax(220px, .32fr) minmax(220px, .32fr) minmax(300px, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+    .button-stack {
+      display: grid;
+      gap: 8px;
+      min-width: 148px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+      min-width: 100%;
+    }
+    .table-wrap table {
+      width: 100%;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      font-size: 13px;
+      vertical-align: top;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      min-width: 60px;
+    }
+    th {
+      color: var(--muted);
+      background: var(--surface-2);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      vertical-align: bottom;
+    }
+    tr:hover td { background: #f8fbfb; }
+    .table-wrap {
+      overflow-x: auto;
+      max-height: 470px;
+    }
+    .reason-list span {
+      display: block;
+      margin-bottom: 4px;
+      line-height: 1.35;
+    }
+    .link-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      white-space: normal;
+    }
+    .link-list a, .mini-button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--blue);
+      display: inline-flex;
+      font-size: 12px;
+      font-weight: 700;
+      min-height: 26px;
+      padding: 4px 7px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 64px;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+    .critical { background: #fee4e2; color: var(--red); border-color: #fda29b; }
+    .high { background: #ffead5; color: var(--amber); border-color: #fdba74; }
+    .medium { background: #dbeafe; color: var(--blue); border-color: #93c5fd; }
+    .low { background: #dcfce7; color: var(--green); border-color: #86efac; }
+    .status { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+    .legitimate, .likely-legitimate { background: #dcfce7; color: var(--green); border-color: #86efac; }
+    .review { background: #dbeafe; color: var(--blue); border-color: #93c5fd; }
+    .suspicious { background: #ffead5; color: var(--amber); border-color: #fdba74; }
+    .confirmed-phishing { background: #fee4e2; color: var(--red); border-color: #fda29b; }
+    .valid { background: #dcfce7; color: var(--green); border-color: #86efac; }
+    .unknown { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+    .forensic { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
+    .selected td { background: #e6f4f2 !important; }
+    .muted { color: var(--muted); }
+    .footer-note {
+      color: #9eb0b8;
+      border-top: 1px solid rgba(255,255,255,.12);
+      font-size: 11px;
+      line-height: 1.45;
+      margin-top: 14px;
+      padding: 12px 8px 0;
+    }
+    .cycle {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(80px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .cycle span {
+      background: #f8fbfb;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      min-height: 38px;
+      padding: 10px;
+      text-align: center;
+    }
+    .cycle span.active {
+      background: #e6f4f2;
+      border-color: #5eead4;
+      color: var(--teal-dark);
+    }
+    .link-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      white-space: normal;
+    }
+    .link-list a, .mini-button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--blue);
+      display: inline-flex;
+      font-size: 12px;
+      font-weight: 700;
+      min-height: 26px;
+      padding: 4px 7px;
+      text-decoration: none;
+    }
+    .split-editor {
+      display: grid;
+      grid-template-columns: minmax(0, .95fr) minmax(300px, .65fr);
+      gap: 14px;
+    }
+    .editor-fields {
+      display: grid;
+      gap: 10px;
+    }
+    .report {
+      background: #fbfcfd;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 360px;
+      padding: 14px;
+      white-space: pre-wrap;
+      line-height: 1.45;
+      overflow: auto;
+    }
+    .report-title {
+      text-align: center;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .reason-list {
+      display: grid;
+      gap: 3px;
+      white-space: normal;
+      line-height: 1.35;
+    }
+    .reason-list span {
+      display: block;
+    }
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      background: #17212b;
+      color: #fff;
+      border-radius: 8px;
+      padding: 10px 13px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: .18s ease;
+      pointer-events: none;
+      max-width: 340px;
+      z-index: 10;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 20, 24, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 20;
+    }
+    .modal-backdrop.show {
+      display: flex;
+    }
+    .modal-window {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 20px 70px rgba(23, 33, 43, 0.28);
+      width: min(920px, 100%);
+      max-height: calc(100vh - 64px);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .modal-header, .modal-footer {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .modal-header { border-bottom: 1px solid var(--line); }
+    .modal-body {
+      padding: 16px 18px;
+      overflow: auto;
+      background: var(--surface);
+      color: var(--ink);
+    }
+    .modal-close {
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      font-size: 22px;
+      cursor: pointer;
+      padding: 0 6px;
+      line-height: 1;
+    }
+    .modal-row {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr);
+      gap: 12px;
+      margin-bottom: 10px;
+      align-items: start;
+      word-break: break-word;
+    }
+    .modal-row strong { display: block; margin-bottom: 4px; color: var(--muted); }
+    .modal-note {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #eff7ff;
+      color: #164e8c;
+      line-height: 1.5;
+    }
+    @media (max-width: 920px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metrics, .two, .split-editor, .form-grid, .form-grid.settings, .scan-grid, .cycle { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong id="brandTitle">DIDS</strong>
+        <span id="brandSubtitle">Domain Impersonation Detection System</span>
+      </div>
+      <nav class="nav" id="nav"></nav>
+      <div class="footer-note">
+        <div id="clock">--</div>
+        <div>Developer: TUMUSIIME MARK</div>
+        <div>0780427684</div>
+        <div>tumusiimemac@gmail.com</div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div>
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSubtitle">Monitoring brand abuse, lookalike domains, and phishing risk.</p>
+        </div>
+        <div class="toolbar">
+          <span class="muted" id="topClock">--</span>
+          <button id="exportStateBtn" title="Download all local DIDS data as JSON">Export JSON</button>
+        </div>
+      </div>
+
+      <section class="view active" id="dashboardView">
+        <div class="grid metrics">
+          <div class="card metric"><b id="mProtected">0</b><span>Protected Domains</span></div>
+          <div class="card metric"><b id="mDetected">0</b><span>Detected Domains</span></div>
+          <div class="card metric"><b id="mOpenAlerts">0</b><span>Open Alerts</span></div>
+          <div class="card metric"><b id="mCritical">0</b><span>Critical Risk</span></div>
+        </div>
+        <div class="grid two" style="margin-top:14px">
+          <div class="card">
+            <div class="card-header"><h2>Highest Risk Detections</h2><button data-action="go" data-target="scanView">New Scan</button></div>
+            <div class="table-wrap"><table id="riskTable"></table></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2>Recent Alerts</h2><button data-action="go" data-target="alertsView">Triage</button></div>
+            <div class="table-wrap"><table id="recentAlertsTable"></table></div>
+          </div>
+        </div>
+        <div class="grid metrics" style="margin-top:14px">
+          <div class="card metric"><b id="mToday">0</b><span>New Today</span></div>
+          <div class="card metric"><b id="mWeek">0</b><span>New This Week</span></div>
+          <div class="card metric"><b id="mMonth">0</b><span>New This Month</span></div>
+          <div class="card metric"><b id="mYear">0</b><span>New This Year</span></div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-header"><h2>Valid URL Inventory</h2><button data-action="go" data-target="domainsView">Manage</button></div>
+          <div class="table-wrap"><table id="validUrlsTable"></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="domainsView">
+        <div class="card">
+          <div class="card-header"><h2>Protected Domain Registry</h2></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div><label>Domain</label><input id="domainInput" placeholder="nfsu.ac.in"></div>
+              <div><label>Brand</label><input id="brandInput" placeholder="NFSU"></div>
+              <div><label>Owner</label><input id="ownerInput" placeholder="NFSU Uganda Campus SOC"></div>
+              <div><label>Priority</label><select id="priorityInput"><option>High</option><option>Medium</option><option>Low</option></select></div>
+              <button class="primary" id="addDomainBtn">Add</button>
+            </div>
+            <div class="form-grid settings" style="margin-top:12px">
+              <div><label>Organisation Full Name</label><textarea id="organisationNameInput" placeholder="National Forensic Science University&#10;National Forensic Science University Uganda Campus"></textarea></div>
+              <div><label>Known Valid URLs Or Subdomains</label><textarea id="validUrlsInput" placeholder="https://nfsu.ac.in&#10;https://uganda.nfsu.ac.in&#10;https://admission.nfsu.ac.in"></textarea></div>
+              <div><label>Critical Service Focus</label><textarea id="criticalServicesInput" placeholder="recruitment&#10;admissions&#10;public applications&#10;student portal"></textarea></div>
+            </div>
+            <div class="toolbar" style="margin-top:12px; align-items: flex-end; gap: 10px;">
+              <div style="min-width:220px"><label>Mode</label><select id="orgModeInput"><option>Single Organisation</option><option>Multiple Organisations</option></select></div>
+              <button id="cancelDomainEditBtn" style="display:none;">Cancel Edit</button>
+            </div>
+          </div>
+          <div class="table-wrap"><table id="domainsTable"></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="scanView">
+        <div class="card">
+          <div class="card-header"><h2>Similarity And Risk Scan</h2><span class="muted" id="scanStatus">Ready</span></div>
+          <div class="card-body">
+            <div class="scan-grid">
+              <div><label>Protected Domain</label><select id="scanProtected"></select></div>
+              <div><label>Searched URL</label><input id="searchedUrlInput" placeholder="https://uganda.nfsu.ac.in/"></div>
+              <div><label>Candidate Domains</label><textarea id="candidateInput" placeholder="Paste suspicious, Google, DNS, certificate, or registrar-discovered URLs/domains, one per line"></textarea></div>
+              <div class="button-stack">
+                <button id="generateBtn">Generate</button>
+                <button id="discoverLiveBtn">Discover Live URLs</button>
+                <button id="loadSeedsBtn">Load Discovery Seeds</button>
+                <button class="primary" id="scanBtn">Scan</button>
+                <button id="clearCandidatesBtn">Clear</button>
+              </div>
+            </div>
+            <div class="form-grid settings" style="margin-top:12px">
+              <div><label>Safe Content Evidence</label><textarea id="contentEvidenceInput" placeholder="Paste sandbox/browser text found on a suspect page. The scanner checks this text for organisation names, domains, account references, and phishing lure words."></textarea></div>
+              <div><label>Discovered Accounts Or Emails</label><textarea id="accountEvidenceInput" placeholder="security@example.com&#10;https://x.com/example"></textarea></div>
+              <div><label>Known Phishing References</label><textarea id="phishingReferenceInput" placeholder="Case ID, takedown ticket, regulator reference, or source URL"></textarea></div>
+            </div>
+            <div class="form-grid settings" style="margin-top:12px">
+              <div><label>Organisation Search Terms</label><textarea id="searchTermsInput" placeholder="National Forensic Science University&#10;NFSU Uganda Campus&#10;nfsu uganda"></textarea></div>
+              <div><label>Online Discovery Seeds</label><textarea id="discoverySeedsInput" placeholder="Paste results from Google, DNS, certificate transparency, or registrar searches here. Example: https://uganda.nfsu.ac.in/"></textarea></div>
+              <div><label>Scan Scope</label><select id="scanScopeInput"><option>Only Current Scan</option><option>Show Organisation History</option><option>Show All History</option></select></div>
+            </div>
+            <div class="toolbar" style="margin-top:12px">
+              <button id="googleDiscoveryBtn">Open Google Discovery</button>
+              <button id="clearCurrentResultsBtn">Clear Current Results</button>
+              <button class="danger" id="clearHistoryBtn">Clear Scan History</button>
+            </div>
+            <div class="cycle" id="scanCycle">
+              <span>Generate</span><span>Normalize</span><span>Enrich</span><span>Score</span><span>Report</span>
+            </div>
+          </div>
+          <div class="card-header"><h2>Search Inbox</h2><span class="muted">Every submitted URL is retained with its decision.</span></div>
+          <div class="table-wrap"><table id="inboxTable"></table></div>
+          <div class="card-header"><h2>Detection Results</h2><span class="muted">Reasons explain why each item was classified.</span></div>
+          <div class="table-wrap"><table id="scanTable"></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="alertsView">
+        <div class="card">
+          <div class="card-header">
+            <h2>Alert Queue</h2>
+            <div class="toolbar">
+              <button id="ackAlertBtn">Acknowledge</button>
+              <button id="closeAlertBtn">Close</button>
+            </div>
+          </div>
+          <div class="table-wrap"><table id="alertsTable"></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="accountsView">
+        <div class="card">
+          <div class="card-header"><h2>Accounts Panel</h2><span class="muted">Emails and public/social accounts linked to organisation URLs.</span></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div><label>Account Or Email</label><input id="accountInput" placeholder="security@mak.ac.ug or https://x.com/makerere"></div>
+              <div><label>Organisation Domain</label><input id="accountDomainInput" placeholder="mak.ac.ug"></div>
+              <div><label>Status</label><select id="accountStatusInput"><option>Unknown</option><option>Valid</option><option>Suspicious</option></select></div>
+              <div><label>Source</label><input id="accountSourceInput" placeholder="Google/social search/manual"></div>
+              <button class="primary" id="addAccountBtn">Add</button>
+            </div>
+          </div>
+          <div class="table-wrap"><table id="accountsTable"></table></div>
+        </div>
+      </section>
+
+      <section class="view" id="investigationsView">
+        <div class="split-editor">
+          <div class="card">
+            <div class="card-header"><h2>Investigations</h2></div>
+            <div class="table-wrap"><table id="investigationsTable"></table></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2>Case Notes</h2></div>
+            <div class="card-body editor-fields">
+              <div><label>Assignee</label><input id="caseAssignee"></div>
+              <div><label>State</label><select id="caseState"><option>Open</option><option>In Review</option><option>Escalated</option><option>Closed</option></select></div>
+              <div><label>Notes</label><textarea id="caseNotes"></textarea></div>
+              <button class="primary" id="saveCaseBtn">Save Case</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="reportsView">
+        <div class="card">
+          <div class="card-header">
+            <h2>Reports</h2>
+            <div class="toolbar">
+              <button class="primary" id="reportBtn">Generate Summary</button>
+              <button id="csvBtn">Export CSV</button>
+              <button id="txtBtn">Export TXT</button>
+            </div>
+          </div>
+          <div class="card-body"><div class="report" id="reportOutput"></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="settingsView">
+        <div class="card">
+          <div class="card-header"><h2>System Settings</h2><span class="muted">Local browser settings are saved on this workstation.</span></div>
+          <div class="card-body">
+            <div class="form-grid settings">
+              <div><label>System Title</label><input id="settingTitle" placeholder="Domain Impersonation Detection System"></div>
+              <div><label>Logo Text</label><input id="settingLogo" placeholder="DIDS"></div>
+              <div><label>VirusTotal API Key</label><input id="settingVirusTotal" type="password" placeholder="Stored locally only"></div>
+              <div><label>Discovery Provider</label><select id="settingDiscoveryProvider"><option value="custom">Custom</option><option value="urlscan">urlscan.io</option><option value="virustotal">VirusTotal</option></select></div>
+              <div><label>Discovery API URL</label><input id="settingDiscoveryApi" placeholder="https://example.com/discovery?domain="></div>
+              <div><label>Discovery API Key</label><input id="settingDiscoveryKey" type="password" placeholder="Optional API key for discovery"></div>
+              <div><label>Auto Scan Minutes</label><input id="settingAutoScan" type="number" min="0" step="1" placeholder="0 disables"></div>
+              <div><label>Sandbox Base URL</label><input id="settingSandbox" placeholder="https://urlscan.io/search/#"></div>
+              <div><label>Default WHOIS URL</label><input id="settingWhois" placeholder="https://lookup.icann.org/en/lookup"></div>
+              <div><label>Python Backend URL</label><input id="settingBackendUrl" placeholder="http://127.0.0.1:8000"></div>
+            </div>
+            <div class="toolbar" style="margin-top:12px">
+              <button class="primary" id="saveSettingsBtn">Save Settings</button>
+              <button id="runAutoScanBtn">Run Monitoring Scan</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="auditView">
+        <div class="card">
+          <div class="card-header"><h2>Audit Logs</h2></div>
+          <div class="table-wrap"><table id="auditTable"></table></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "dids.production.state.v2";
+    const navItems = [
+      ["dashboardView", "Dashboard", "#", "Monitoring brand abuse, lookalike domains, and phishing risk."],
+      ["domainsView", "Protected Domains", "D", "Maintain the brands and domains under protection."],
+      ["scanView", "Scan", "S", "Generate and analyze candidate impersonation domains."],
+      ["alertsView", "Alerts", "!", "Prioritize high-risk detections for response."],
+      ["accountsView", "Accounts", "@", "Track emails and social accounts associated with organisation URLs."],
+      ["investigationsView", "Investigations", "I", "Track analyst ownership, notes, and state."],
+      ["reportsView", "Reports", "R", "Create summaries and export detection data."],
+      ["settingsView", "Settings", "*", "Configure title, logo, APIs, monitoring, and safe enrichment links."],
+      ["auditView", "Audit Logs", "A", "Review local operator actions."],
+    ];
+
+    const homographs = {
+      a: ["а", "ɑ"], c: ["с"], e: ["е", "ė"], i: ["і", "í"], l: ["1", "і"],
+      o: ["0", "о"], p: ["р"], s: ["5", "ѕ"]
+    };
+    const keyboard = {
+      a:"qwsz", b:"vghn", c:"xdfv", d:"erfcxs", e:"wsdr", f:"rtgvcd", g:"tyhbvf",
+      h:"yujnbg", i:"ujko", l:"kop", m:"njk", n:"bhjm", o:"iklp", p:"ol",
+      r:"edft", s:"wedxza", t:"rfgy", u:"yhji", v:"cfgb", w:"qase", x:"zsdc",
+      y:"tghu", z:"asx"
+    };
+
+    let state = loadState();
+    let selectedAlertId = null;
+    let selectedCaseId = null;
+    let editingDomainId = null;
+    let lastReportText = "";
+    let autoScanTimer = null;
+    let activeScanIds = null;
+
+    function now() {
+      return new Date().toISOString().slice(0, 19).replace("T", " ");
+    }
+
+    function uid(prefix) {
+      return `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try { return normalizeState(JSON.parse(raw)); } catch (_) {}
+      }
+      return emptyState();
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function emptyState() {
+      return {
+        domains: [
+          {
+            id: uid("dom"),
+            domain: "nfsu.ac.in",
+            brand: "NFSU",
+            owner: "NFSU Uganda Campus SOC",
+            organisationName: "National Forensic Science University\nNational Forensic Science University Uganda Campus",
+            priority: "High",
+            validUrls: ["nfsu.ac.in", "uganda.nfsu.ac.in", "admission.nfsu.ac.in"],
+            criticalServices: ["recruitment", "admissions", "public applications", "student portal"],
+            mode: "Multiple Organisations",
+            created: now()
+          }
+        ],
+        detections: [],
+        alerts: [],
+        investigations: [],
+        inbox: [],
+        audit: [],
+        accounts: [],
+        settings: {
+          title: "Domain Impersonation Detection System",
+          logo: "DIDS",
+          virusTotalApiKey: "",
+          discoveryProvider: "custom",
+          discoveryApiUrl: "",
+          discoveryApiKey: "",
+          autoScanMinutes: 0,
+          sandboxUrl: "https://urlscan.io/search/#",
+          whoisUrl: "https://lookup.icann.org/en/lookup",
+        }
+      };
+    }
+
+    function defaultProtectedDomains() {
+      return [
+        {
+          id: uid("dom"),
+          domain: "nfsu.ac.in",
+          brand: "NFSU",
+          owner: "NFSU Uganda Campus SOC",
+          organisationName: "National Forensic Science University\nNational Forensic Science University Uganda Campus",
+          priority: "High",
+          validUrls: ["nfsu.ac.in", "uganda.nfsu.ac.in", "admission.nfsu.ac.in"],
+          criticalServices: ["recruitment", "admissions", "public applications", "student portal"],
+          mode: "Multiple Organisations",
+          created: now()
+        }
+      ];
+    }
+
+    function normalizeState(value) {
+      const next = { ...emptyState(), ...(value || {}) };
+      next.domains = Array.isArray(next.domains) ? next.domains : [];
+      next.detections = Array.isArray(next.detections) ? next.detections : [];
+      next.alerts = Array.isArray(next.alerts) ? next.alerts : [];
+      next.investigations = Array.isArray(next.investigations) ? next.investigations : [];
+      next.inbox = Array.isArray(next.inbox) ? next.inbox : [];
+      next.audit = Array.isArray(next.audit) ? next.audit : [];
+      next.accounts = Array.isArray(next.accounts) ? next.accounts : [];
+      next.settings = { ...emptyState().settings, ...(next.settings || {}) };
+      next.domains = next.domains.map(domain => ({
+        validUrls: [],
+        criticalServices: [],
+        mode: "Single Organisation",
+        organisationName: "",
+        ...domain,
+        domain: normalizeDomain(domain.domain || ""),
+        validUrls: uniqueList((domain.validUrls || []).map(normalizeDomain).filter(Boolean)),
+        criticalServices: uniqueList(domain.criticalServices || []),
+      }));
+      if (!next.domains.length) {
+        next.domains = defaultProtectedDomains();
+      }
+      return next;
+    }
+
+    function resetDomainForm() {
+      editingDomainId = null;
+      document.getElementById("domainInput").value = "";
+      document.getElementById("brandInput").value = "";
+      document.getElementById("ownerInput").value = "";
+      document.getElementById("organisationNameInput").value = "";
+      document.getElementById("priorityInput").value = "High";
+      document.getElementById("validUrlsInput").value = "";
+      document.getElementById("criticalServicesInput").value = "";
+      document.getElementById("orgModeInput").value = "Single Organisation";
+      document.getElementById("addDomainBtn").textContent = "Add";
+      document.getElementById("cancelDomainEditBtn").style.display = "none";
+    }
+
+    function populateDomainForm(domain) {
+      document.getElementById("domainInput").value = domain.domain || "";
+      document.getElementById("brandInput").value = domain.brand || "";
+      document.getElementById("ownerInput").value = domain.owner || "";
+      document.getElementById("organisationNameInput").value = domain.organisationName || "";
+      document.getElementById("priorityInput").value = domain.priority || "High";
+      document.getElementById("validUrlsInput").value = (domain.validUrls || []).join("\n");
+      document.getElementById("criticalServicesInput").value = (domain.criticalServices || []).join("\n");
+      document.getElementById("orgModeInput").value = domain.mode || "Single Organisation";
+      document.getElementById("addDomainBtn").textContent = "Update";
+      document.getElementById("cancelDomainEditBtn").style.display = "inline-flex";
+    }
+
+    function editDomain(id) {
+      const domain = state.domains.find(d => d.id === id);
+      if (!domain) return;
+      editingDomainId = id;
+      populateDomainForm(domain);
+      showView("domainsView");
+    }
+
+    function log(action, details) {
+      state.audit.unshift({ id: uid("audit"), actor: "analyst", action, details, created: now() });
+      state.audit = state.audit.slice(0, 250);
+      saveState();
+    }
+
+    function normalizeDomain(value) {
+      value = String(value || "").trim().toLowerCase();
+      value = value.replace(/^[a-z][a-z0-9+.-]*:\/\//i, "");
+      value = value.replace(/^[^@/]+@/, "");
+      value = value.split(/[/?#]/)[0].replace(/:\d+$/, "").replace(/^\.+|\.+$/g, "");
+      return value;
+    }
+
+    function displayUrl(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    }
+
+    function splitDomain(domain) {
+      const parts = normalizeDomain(domain).split(".");
+      if (parts.length < 2) return [domain, ""];
+      const secondLevelSuffixes = new Set([
+        "ac.in", "edu.in", "gov.in", "co.in", "org.in", "res.in", "nic.in",
+        "ac.ug", "co.ug", "or.ug", "go.ug",
+        "ac.uk", "co.uk", "com.au", "co.za"
+      ]);
+      const lastTwo = parts.slice(-2).join(".");
+      if (parts.length >= 3 && secondLevelSuffixes.has(lastTwo)) {
+        return [parts.slice(0, -2).join("."), lastTwo];
+      }
+      return [parts.slice(0, -1).join("."), parts.at(-1)];
+    }
+
+    function isSubdomainOf(candidate, base) {
+      candidate = normalizeDomain(candidate);
+      base = normalizeDomain(base);
+      return candidate.endsWith(`.${base}`);
+    }
+
+    function parseList(value) {
+      return String(value || "").split(/\r?\n|,/).map(item => item.trim()).filter(Boolean);
+    }
+
+    function uniqueList(values) {
+      return [...new Set(values.map(value => String(value || "").trim()).filter(Boolean))];
+    }
+
+    function domainMode(protectedDomain) {
+      return String(protectedDomain?.mode || "Single Organisation");
+    }
+
+    function trustsSubdomains(protectedDomain) {
+      return /^multiple/i.test(domainMode(protectedDomain));
+    }
+
+    function validDomainsFor(protectedDomain) {
+      const urls = [
+        protectedDomain?.domain,
+        ...(protectedDomain?.validUrls || [])
+      ].filter(Boolean);
+      return [...new Set(urls.map(normalizeDomain).filter(Boolean))];
+    }
+
+    function isKnownValid(protectedDomain, candidate) {
+      const normalized = normalizeDomain(candidate);
+      const base = normalizeDomain(protectedDomain?.domain || "");
+      return validDomainsFor(protectedDomain).some(valid => {
+        if (normalized === valid) return true;
+        if (valid === base) return trustsSubdomains(protectedDomain) && isSubdomainOf(normalized, base);
+        return isSubdomainOf(normalized, valid);
+      });
+    }
+
+    function organisationTermsFor(protectedDomain) {
+      const [baseName] = splitDomain(protectedDomain?.domain || "");
+      const raw = [
+        protectedDomain?.brand,
+        protectedDomain?.domain,
+        baseName,
+        ...parseList(protectedDomain?.organisationName || ""),
+        ...validDomainsFor(protectedDomain)
+      ];
+      const expanded = raw.flatMap(term => {
+        const value = String(term || "").trim();
+        if (!value) return [];
+        return [
+          value,
+          value.replace(/sciences/ig, "science"),
+          value.replace(/science university/ig, "sciences university")
+        ];
+      });
+      return uniqueList(expanded.map(term => term.toLowerCase())).filter(term => term.length > 2);
+    }
+
+    function isoDate(value) {
+      const date = new Date(value || now());
+      return Number.isNaN(date.getTime()) ? new Date() : date;
+    }
+
+    function countSince(days) {
+      const floor = new Date();
+      floor.setHours(0, 0, 0, 0);
+      if (days) floor.setDate(floor.getDate() - days + 1);
+      return state.detections.filter(d => isoDate(d.created) >= floor).length;
+    }
+
+    function monthCount() {
+      const floor = new Date();
+      floor.setDate(1);
+      floor.setHours(0, 0, 0, 0);
+      return state.detections.filter(d => isoDate(d.created) >= floor).length;
+    }
+
+    function yearCount() {
+      const floor = new Date(new Date().getFullYear(), 0, 1);
+      return state.detections.filter(d => isoDate(d.created) >= floor).length;
+    }
+
+    function investigationLinks(domain) {
+      const encoded = encodeURIComponent(domain);
+      const vt = `https://www.virustotal.com/gui/domain/${encoded}`;
+      const whois = `${state.settings.whoisUrl || "https://lookup.icann.org/en/lookup"}?name=${encoded}`;
+      const google = `https://www.google.com/search?q=${encodeURIComponent(`"${domain}" phishing OR login OR portal`)}`;
+      const social = `https://www.google.com/search?q=${encodeURIComponent(`site:facebook.com OR site:x.com OR site:linkedin.com "${domain}"`)}`;
+      const sandbox = `${state.settings.sandboxUrl || "https://urlscan.io/search/#"}${encoded}`;
+      return { vt, whois, google, social, sandbox };
+    }
+
+    function renderLinks(row) {
+      const links = investigationLinks(row.domain || row.normalizedDomain || row.searchedUrl || "");
+      return `<div class="link-list">
+        <a href="${links.sandbox}" target="_blank" rel="noopener noreferrer">Sandbox</a>
+        <a href="${links.whois}" target="_blank" rel="noopener noreferrer">WHOIS</a>
+        <a href="${links.vt}" target="_blank" rel="noopener noreferrer">VirusTotal</a>
+        <a href="${links.google}" target="_blank" rel="noopener noreferrer">Google</a>
+        <a href="${links.social}" target="_blank" rel="noopener noreferrer">Social</a>
+        <button class="mini-button" data-inspect-domain="${escapeHtml(row.domain || row.normalizedDomain || row.searchedUrl || "")}" data-inspect-protected="${escapeHtml(row.protectedDomain || "")}">Inspect</button>
+      </div>`;
+    }
+
+    function bindInspectButtons() {
+      document.querySelectorAll("[data-inspect-domain]").forEach(btn => {
+        btn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          const url = btn.dataset.inspectDomain;
+          const protectedDomain = btn.dataset.inspectProtected || state.domains[0]?.domain || "";
+          inspectUrlCandidate(url, protectedDomain);
+        });
+      });
+    }
+
+    function showInspectModal() {
+      const modal = document.getElementById("inspectModal");
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeInspectModal() {
+      const modal = document.getElementById("inspectModal");
+      modal.classList.remove("show");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function setInspectField(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value || "-";
+    }
+
+    async function inspectUrlCandidate(url, protectedDomain) {
+      if (!url) return toast("Inspect URL is missing.");
+      showInspectModal();
+      setInspectField("inspectUrlText", url);
+      setInspectField("inspectProtectedText", protectedDomain || "Unknown");
+      setInspectField("inspectResolvedText", "Scanning...");
+      setInspectField("inspectStatusText", "Scanning...");
+      setInspectField("inspectTitleText", "Scanning...");
+      setInspectField("inspectIndicatorsText", "Scanning...");
+      setInspectField("inspectRemarksText", "Waiting for backend response...");
+      const backend = (state.settings.backendApiUrl || "http://127.0.0.1:8000").replace(/\/+$/, "");
+      const endpoint = `${backend}/inspect?url=${encodeURIComponent(url)}&protected=${encodeURIComponent(protectedDomain)}`;
+      try {
+        const response = await fetch(endpoint, { method: "GET" });
+        if (!response.ok) {
+          throw new Error(`Backend returned ${response.status}`);
+        }
+        const data = await response.json();
+        setInspectField("inspectResolvedText", data.resolved || data.status || "N/A");
+        setInspectField("inspectStatusText", data.status || "N/A");
+        setInspectField("inspectTitleText", data.title || data.summary || "N/A");
+        setInspectField("inspectIndicatorsText", Array.isArray(data.indicators) ? data.indicators.join(", ") : data.indicators || "None");
+        setInspectField("inspectRemarksText", data.remarks || data.related || data.note || "No additional remarks.");
+      } catch (error) {
+        console.error(error);
+        setInspectField("inspectResolvedText", "Error");
+        setInspectField("inspectStatusText", "Error");
+        setInspectField("inspectTitleText", "Error");
+        setInspectField("inspectIndicatorsText", "Error");
+        setInspectField("inspectRemarksText", `Cannot reach backend. Start the Python backend and set Python Backend URL in Settings. ${error.message}`);
+      }
+    }
+
+    function renderActions(row) {
+      return `<div class="link-list">
+        <button class="mini-button" data-mark-valid="${escapeHtml(row.id)}">Valid</button>
+        <button class="mini-button" data-mark-phishing="${escapeHtml(row.id)}">Phishing</button>
+      </div>`;
+    }
+
+    function compactReasons(reasons) {
+      return reasons.map(reason => reason.text).join(" | ");
+    }
+
+    function renderReasons(row) {
+      const reasons = Array.isArray(row.reasonDetails) && row.reasonDetails.length
+        ? row.reasonDetails
+        : [{ text: row.reasons || row.indicators || "No reason recorded" }];
+      return `<div class="reason-list">${reasons.slice(0, 4).map(reason => `<span>${escapeHtml(reason.text)}</span>`).join("")}</div>`;
+    }
+
+    function levenshtein(a, b) {
+      const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+      for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+      for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+      for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+        }
+      }
+      return dp[a.length][b.length];
+    }
+
+    function similarity(a, b) {
+      a = normalizeDomain(a); b = normalizeDomain(b);
+      const maxLen = Math.max(a.length, b.length) || 1;
+      return Math.round((1 - levenshtein(a, b) / maxLen) * 1000) / 10;
+    }
+
+    function attackType(base, candidate) {
+      const [baseName, baseTld] = splitDomain(base);
+      const [candName, candTld] = splitDomain(candidate);
+      if (normalizeDomain(candidate) === normalizeDomain(base)) return "Legitimate exact match";
+      if (isSubdomainOf(candidate, base)) return "Authorized subdomain";
+      if ([...candidate].some(ch => ch.charCodeAt(0) > 127)) return "Homograph";
+      if (baseName === candName && baseTld !== candTld) return "TLD swap";
+      if (candName.includes(baseName) && candName !== baseName) return "Brand keyword";
+      if (Math.abs(baseName.length - candName.length) === 1) return "Missing/added character";
+      if (baseName.length === candName.length) {
+        const diffs = [...baseName].filter((ch, i) => ch !== candName[i]).length;
+        if (diffs <= 2) return "Keyboard substitution";
+      }
+      return "Lookalike";
+    }
+
+    function isPlainKeyword(value) {
+      const text = String(value || "").trim();
+      return text.length > 1 && /^[a-z0-9_\-]+$/i.test(text) && !text.includes(".") && !text.includes("/");
+    }
+
+    function generateCandidates(domain) {
+      domain = normalizeDomain(domain);
+      const [name, tld] = splitDomain(domain);
+      const out = new Set();
+      if (!tld) {
+        for (let i = 0; i < name.length; i++) {
+          out.add(`${name.slice(0, i)}${name.slice(i + 1)}`);
+          out.add(`${name.slice(0, i)}${name[i]}${name.slice(i)}`);
+          if (i < name.length - 1) out.add(`${name.slice(0, i)}${name[i + 1]}${name[i]}${name.slice(i + 2)}`);
+          [...(keyboard[name[i]] || "").slice(0, 2)].forEach(ch => out.add(`${name.slice(0, i)}${ch}${name.slice(i + 1)}`));
+          (homographs[name[i]] || []).slice(0, 1).forEach(ch => out.add(`${name.slice(0, i)}${ch}${name.slice(i + 1)}`));
+        }
+        ["_", "-"].forEach(sep => {
+          for (let i = 1; i < name.length; i++) {
+            out.add(`${name.slice(0, i)}${sep}${name.slice(i)}`);
+          }
+          out.add(`${sep}${name}`);
+          out.add(`${name}${sep}`);
+        });
+        ["login", "secure", "verify", "support", "portal", "account", "webmail", "student", "apply"].forEach(word => {
+          out.add(`${name}-${word}`);
+          out.add(`${word}-${name}`);
+        });
+        ["ac.ug", "ac.in", "com", "net", "org", "co", "io", "biz", "info", "online", "site"].forEach(alt => out.add(`${name}.${alt}`));
+        out.delete(domain);
+        return [...out].sort((a, b) => similarity(domain, b) - similarity(domain, a)).slice(0, 90);
+      }
+      for (let i = 0; i < name.length; i++) {
+        out.add(`${name.slice(0, i)}${name.slice(i + 1)}.${tld}`);
+        out.add(`${name.slice(0, i)}${name[i]}${name.slice(i)}.${tld}`);
+        if (i < name.length - 1) out.add(`${name.slice(0, i)}${name[i + 1]}${name[i]}${name.slice(i + 2)}.${tld}`);
+        [...(keyboard[name[i]] || "").slice(0, 2)].forEach(ch => out.add(`${name.slice(0, i)}${ch}${name.slice(i + 1)}.${tld}`));
+        (homographs[name[i]] || []).slice(0, 1).forEach(ch => out.add(`${name.slice(0, i)}${ch}${name.slice(i + 1)}.${tld}`));
+      }
+      ["login", "secure", "verify", "support", "portal", "account", "webmail", "student"].forEach(word => {
+        out.add(`${name}-${word}.${tld}`);
+        out.add(`${word}-${name}.${tld}`);
+      });
+      ["com", "net", "org", "co", "io", "biz", "info", "online", "site"].forEach(alt => {
+        if (alt !== tld) out.add(`${name}.${alt}`);
+      });
+      out.delete(domain);
+      return [...out].sort((a, b) => similarity(domain, b) - similarity(domain, a)).slice(0, 90);
+    }
+
+    function analyze(protectedDomain, candidate, evidence = {}) {
+      const base = typeof protectedDomain === "string" ? protectedDomain : protectedDomain.domain;
+      candidate = normalizeDomain(candidate);
+      const protectedRecord = typeof protectedDomain === "string" ? { domain: base, brand: base, validUrls: [], criticalServices: [] } : protectedDomain;
+      const contentEvidence = String(evidence.content || "");
+      const phishingReference = String(evidence.reference || "").trim();
+      const accountEvidence = parseList(evidence.accounts || "");
+      const baseNormalized = normalizeDomain(base);
+      const brand = String(protectedRecord.brand || baseNormalized);
+      const criticalTerms = [...(protectedRecord.criticalServices || []), "recruitment", "admission", "application", "portal", "student", "webmail"].filter(Boolean);
+      const knownValid = isKnownValid(protectedRecord, candidate);
+      const sim = similarity(base, candidate);
+      const type = attackType(base, candidate);
+      const [baseName, baseTld] = splitDomain(base);
+      const [candName, candTld] = splitDomain(candidate);
+      const reasons = [];
+      const indicators = [];
+      const officialSubdomain = isSubdomainOf(candidate, base);
+      let score = 0;
+
+      if (knownValid) {
+        reasons.push({ points: 0, text: `Matched the organisation's protected or approved URL inventory for ${baseNormalized}.` });
+        const exactProtected = candidate === baseNormalized;
+        return {
+          similarity: candidate === baseNormalized ? 100 : sim,
+          attackType: type,
+          risk: 1,
+          severity: severity(1),
+          decision: exactProtected ? "Legitimate" : "Valid",
+          dns: "Browser mode: ready for resolver enrichment",
+          ssl: "Browser mode: ready for certificate enrichment",
+          whois: "Open WHOIS enrichment link from the investigation column",
+          virusTotal: state.settings.virusTotalApiKey ? "VirusTotal API key configured locally; use backend/sandbox connector for API lookup." : "VirusTotal web lookup available; API key not configured.",
+          website: "Approved organisation URL; no direct malicious-page visit performed in browser mode",
+          content: contentEvidence ? "Safe pasted content retained as evidence for report." : "No page content evidence submitted.",
+          activeStatus: "Not pinged in browser mode",
+          createdDate: "WHOIS enrichment required",
+          indicators: "Approved valid URL",
+          reasonDetails: reasons,
+          reasons: compactReasons(reasons)
+        };
+      }
+
+      if (officialSubdomain) {
+        score += 5;
+        reasons.push({ points: 5, text: `Domain is a subdomain of protected domain ${base}; likely authorized but should be inventory-checked.` });
+        if (/(login|verify|secure|account|portal|webmail|apply|student)/i.test(candidate)) {
+          score += 8;
+          indicators.push("Sensitive official subdomain");
+          reasons.push({ points: 8, text: "Subdomain contains a sensitive service keyword, so it remains visible for review." });
+        }
+      } else {
+        if (sim >= 95) {
+          score += 35;
+          reasons.push({ points: 35, text: `Very high similarity to ${base} (${sim}%).` });
+        } else if (sim >= 88) {
+          score += 28;
+          reasons.push({ points: 28, text: `High similarity to ${base} (${sim}%).` });
+        } else if (sim >= 75) {
+          score += 18;
+          reasons.push({ points: 18, text: `Moderate similarity to ${base} (${sim}%).` });
+        } else {
+          score += 6;
+          reasons.push({ points: 6, text: `Low direct similarity to ${base} (${sim}%), but checked for brand and lure indicators.` });
+        }
+
+        const typePoints = { Homograph: 32, "Keyboard substitution": 24, "Missing/added character": 20, "TLD swap": 17, "Brand keyword": 20, Lookalike: 12 }[type] || 10;
+        score += typePoints;
+        reasons.push({ points: typePoints, text: `${type} pattern detected.` });
+      }
+
+      if ([...candidate].some(ch => ch.charCodeAt(0) > 127)) {
+        score += 18;
+        indicators.push("Unicode homograph");
+        reasons.push({ points: 18, text: "Contains non-ASCII characters that can visually imitate Latin letters." });
+      }
+      if (!officialSubdomain && /(login|secure|verify|account|password|webmail|portal|student|apply|admission)/i.test(candidate)) {
+        score += 20;
+        indicators.push("Credential or service lure");
+        reasons.push({ points: 20, text: "Uses a login, portal, application, or verification keyword commonly used in phishing." });
+      }
+      if (candName.includes(baseName) && candidate !== base && !officialSubdomain) {
+        score += 12;
+        indicators.push("Brand keyword");
+        reasons.push({ points: 12, text: `Includes protected brand token "${baseName}" outside the official domain.` });
+      }
+      if (baseTld !== candTld && candName.replace(/[-_.]/g, "").includes(baseName.replace(/[-_.]/g, ""))) {
+        score += 12;
+        indicators.push("TLD drift");
+        reasons.push({ points: 12, text: `Uses ${candTld} instead of the protected suffix ${baseTld}.` });
+      }
+      if (/\.(zip|mov|top|xyz|click|online|site|info|biz)$/i.test(candidate)) {
+        score += 14;
+        indicators.push("Higher-risk TLD");
+        reasons.push({ points: 14, text: "Uses a TLD often abused in disposable phishing infrastructure." });
+      }
+      const evidenceLower = contentEvidence.toLowerCase();
+      const orgTerms = [brand, baseName, baseNormalized].map(v => String(v || "").toLowerCase()).filter(Boolean);
+      const foundOrgTerms = orgTerms.filter(term => evidenceLower.includes(term));
+      if (contentEvidence && foundOrgTerms.length) {
+        score += 14;
+        indicators.push("Organisation text found");
+        reasons.push({ points: 14, text: `Safe content evidence references the organisation (${[...new Set(foundOrgTerms)].join(", ")}).` });
+      }
+      const foundCritical = criticalTerms.filter(term => evidenceLower.includes(String(term).toLowerCase()));
+      if (contentEvidence && foundCritical.length) {
+        score += 16;
+        indicators.push("Critical service lure");
+        reasons.push({ points: 16, text: `Content references critical service terms: ${[...new Set(foundCritical)].join(", ")}.` });
+      }
+      if (/(password|login|verify|otp|account|wallet|payment|credential|reset)/i.test(contentEvidence)) {
+        score += 16;
+        indicators.push("Phishing page text");
+        reasons.push({ points: 16, text: "Content evidence contains credential, verification, or account-reset language." });
+      }
+      if (accountEvidence.length) {
+        indicators.push("Associated accounts observed");
+        reasons.push({ points: 4, text: `${accountEvidence.length} account/email reference(s) captured for the accounts panel.` });
+        score += Math.min(10, accountEvidence.length * 2);
+      }
+      if (phishingReference) {
+        indicators.push("Known phishing reference");
+        reasons.push({ points: 20, text: `Known phishing reference supplied: ${phishingReference}.` });
+        score += 20;
+      }
+
+      score = Math.max(1, Math.min(100, Math.round(score)));
+      const decision = score >= 60 ? "Suspicious" : score >= 25 ? "Review" : "Likely legitimate";
+      if (!indicators.length) indicators.push(decision);
+
+      return {
+        similarity: sim,
+        attackType: type,
+        risk: score,
+        severity: severity(score),
+        decision,
+        dns: "Browser mode: ready for resolver enrichment",
+        ssl: "Browser mode: ready for certificate enrichment",
+        whois: "WHOIS lookup link generated; creation date requires external enrichment.",
+        virusTotal: state.settings.virusTotalApiKey ? "VirusTotal API key configured locally; API calls require backend/sandbox connector." : "VirusTotal web lookup link generated; API key not configured.",
+        website: indicators.includes("Credential or service lure") || indicators.includes("Critical service lure") ? "Candidate contains credential/service lure evidence" : "No direct remote page fetched in browser-only mode",
+        content: contentEvidence ? contentEvidence.slice(0, 500) : "No safe content evidence submitted.",
+        activeStatus: "Use sandbox/ping enrichment link before direct visit.",
+        createdDate: "WHOIS enrichment required",
+        phishingReference,
+        indicators: indicators.join(", "),
+        reasonDetails: reasons,
+        reasons: compactReasons(reasons)
+      };
+    }
+
+    function severity(score) {
+      if (score >= 80) return "Critical";
+      if (score >= 60) return "High";
+      if (score >= 40) return "Medium";
+      return "Low";
+    }
+
+    function badge(text) {
+      const cls = String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      return `<span class="badge ${cls}">${escapeHtml(text)}</span>`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    }
+
+    function renderTable(id, columns, rows, onRow) {
+      const table = document.getElementById(id);
+      const head = `<thead><tr>${columns.map(c => `<th style="width:${c.width || "auto"}">${escapeHtml(c.label)}</th>`).join("")}</tr></thead>`;
+      const body = rows.map(row => {
+        const selected = row.selected ? " selected" : "";
+        const cells = columns.map(c => `<td title="${escapeHtml(c.raw ? row[c.key] : strip(row[c.key]))}">${c.render ? c.render(row) : escapeHtml(row[c.key])}</td>`).join("");
+        return `<tr class="${selected}" data-id="${escapeHtml(row.id || "")}">${cells}</tr>`;
+      }).join("");
+      table.innerHTML = `${head}<tbody>${body || `<tr><td colspan="${columns.length}" class="muted">No records yet.</td></tr>`}</tbody>`;
+      if (onRow) {
+        table.querySelectorAll("tbody tr[data-id]").forEach(tr => tr.addEventListener("click", () => onRow(tr.dataset.id)));
+      }
+    }
+
+    function strip(value) {
+      const div = document.createElement("div");
+      div.innerHTML = String(value ?? "");
+      return div.textContent || div.innerText || "";
+    }
+
+    function renderAll() {
+      renderNav();
+      applySettings();
+      renderDomainOptions();
+      renderDashboard();
+      renderDomains();
+      renderInbox();
+      renderScanTable();
+      renderAlerts();
+      renderAccounts();
+      renderInvestigations();
+      renderSettings();
+      renderAudit();
+      setupAutoScan();
+      saveState();
+    }
+
+    function renderNav() {
+      const nav = document.getElementById("nav");
+      nav.innerHTML = navItems.map(([id, title, icon]) => `<button data-view="${id}" class="${document.getElementById(id).classList.contains("active") ? "active" : ""}"><span class="icon">${icon}</span><span>${title}</span></button>`).join("");
+      nav.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.view)));
+    }
+
+    function showView(id) {
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      const item = navItems.find(v => v[0] === id);
+      document.getElementById("pageTitle").textContent = item[1];
+      document.getElementById("pageSubtitle").textContent = item[3];
+      renderNav();
+    }
+
+    function renderDashboard() {
+      document.getElementById("mProtected").textContent = state.domains.length;
+      document.getElementById("mDetected").textContent = state.detections.length;
+      document.getElementById("mOpenAlerts").textContent = state.alerts.filter(a => a.status !== "Closed").length;
+      document.getElementById("mCritical").textContent = state.detections.filter(d => d.risk >= 80).length;
+      document.getElementById("mToday").textContent = countSince(1);
+      document.getElementById("mWeek").textContent = countSince(7);
+      document.getElementById("mMonth").textContent = monthCount();
+      document.getElementById("mYear").textContent = yearCount();
+      const riskRows = [...state.detections].sort((a, b) => b.risk - a.risk).slice(0, 15);
+      renderTable("riskTable", [
+        { key: "domain", label: "Domain", width: "28%" },
+        { key: "brand", label: "Brand", width: "18%" },
+        { key: "risk", label: "Risk", width: "10%" },
+        { key: "severity", label: "Severity", width: "13%", render: r => badge(r.severity) },
+        { key: "attackType", label: "Type", width: "18%" },
+        { key: "decision", label: "Decision", width: "14%", render: r => badge(r.decision || r.status) }
+      ], riskRows);
+      renderTable("recentAlertsTable", [
+        { key: "severity", label: "Severity", width: "18%", render: r => badge(r.severity) },
+        { key: "title", label: "Title", width: "48%" },
+        { key: "status", label: "Status", width: "16%", render: r => badge(r.status) },
+        { key: "created", label: "Created" }
+      ], state.alerts.slice(0, 15));
+      const validRows = state.domains.flatMap(domain => validDomainsFor(domain).map(url => ({
+        id: `${domain.id}-${url}`,
+        url,
+        domain: domain.domain,
+        brand: domain.brand,
+        status: "Valid"
+      })));
+      renderTable("validUrlsTable", [
+        { key: "url", label: "URL/Subdomain", width: "30%" },
+        { key: "domain", label: "Protected", width: "20%" },
+        { key: "brand", label: "Brand", width: "25%" },
+        { key: "status", label: "Status", render: r => badge(r.status) }
+      ], validRows);
+    }
+
+    function renderDomains() {
+      renderTable("domainsTable", [
+        { key: "domain", label: "Domain", width: "18%" },
+        { key: "brand", label: "Brand", width: "14%" },
+        { key: "owner", label: "Owner", width: "22%" },
+        { key: "priority", label: "Priority", width: "10%", render: r => badge(r.priority) },
+        { key: "validCount", label: "Valid URLs", width: "10%", render: r => String(validDomainsFor(r).length) },
+        { key: "mode", label: "Mode", width: "10%" },
+        { key: "created", label: "Created", width: "12%" },
+        { key: "actions", label: "", width: "12%", render: r => `<button class="mini-button" data-edit-domain="${r.id}">Edit</button><button class="danger" data-delete-domain="${r.id}">Delete</button>` }
+      ], state.domains.map(d => ({ ...d, validCount: validDomainsFor(d).length })), editDomain);
+      document.querySelectorAll("[data-delete-domain]").forEach(btn => {
+        btn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          deleteDomain(btn.dataset.deleteDomain);
+        });
+      });
+      document.querySelectorAll("[data-edit-domain]").forEach(btn => {
+        btn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          editDomain(btn.dataset.editDomain);
+        });
+      });
+    }
+
+    function renderScanTable() {
+      const rows = [...state.detections].sort((a, b) => b.created.localeCompare(a.created)).slice(0, 100);
+      renderTable("scanTable", [
+        { key: "searchedUrl", label: "Searched URL", width: "20%" },
+        { key: "domain", label: "Domain", width: "14%" },
+        { key: "risk", label: "Risk", width: "7%" },
+        { key: "severity", label: "Severity", width: "10%", render: r => badge(r.severity) },
+        { key: "decision", label: "Decision", width: "10%", render: r => badge(r.decision || r.status) },
+        { key: "attackType", label: "Type", width: "12%" },
+        { key: "reasons", label: "Reasons", width: "22%", render: renderReasons, raw: true },
+        { key: "links", label: "Enrich", width: "12%", render: renderLinks, raw: true },
+        { key: "actions", label: "Mark", width: "13%", render: renderActions, raw: true }
+      ], rows);
+      bindMarkButtons();
+      bindInspectButtons();
+    }
+
+    function renderInbox() {
+      const rows = [...(state.inbox || [])].sort((a, b) => b.created.localeCompare(a.created)).slice(0, 80);
+      renderTable("inboxTable", [
+        { key: "searchedUrl", label: "Searched URL", width: "26%" },
+        { key: "normalizedDomain", label: "Normalized Domain", width: "18%" },
+        { key: "protectedDomain", label: "Protected", width: "16%" },
+        { key: "risk", label: "Risk", width: "7%" },
+        { key: "decision", label: "Decision", width: "12%", render: r => badge(r.decision) },
+        { key: "reasons", label: "Reason", render: renderReasons, raw: true },
+        { key: "links", label: "Enrich", width: "18%", render: renderLinks, raw: true }
+      ], rows);
+      bindInspectButtons();
+    }
+
+    function renderAlerts() {
+      renderTable("alertsTable", [
+        { key: "severity", label: "Severity", width: "12%", render: r => badge(r.severity) },
+        { key: "title", label: "Title", width: "38%" },
+        { key: "message", label: "Message", width: "28%" },
+        { key: "status", label: "Status", width: "10%", render: r => badge(r.status) },
+        { key: "created", label: "Created" }
+      ], state.alerts.map(a => ({ ...a, selected: a.id === selectedAlertId })), id => {
+        selectedAlertId = id;
+        renderAlerts();
+      });
+    }
+
+    function renderInvestigations() {
+      const rows = state.investigations.map(c => ({ ...c, selected: c.id === selectedCaseId }));
+      renderTable("investigationsTable", [
+        { key: "domain", label: "Domain", width: "28%" },
+        { key: "assignee", label: "Assignee", width: "18%" },
+        { key: "state", label: "State", width: "16%", render: r => badge(r.state) },
+        { key: "notes", label: "Notes", width: "24%" },
+        { key: "updated", label: "Updated" }
+      ], rows, id => {
+        selectedCaseId = id;
+        const found = state.investigations.find(c => c.id === id);
+        document.getElementById("caseAssignee").value = found?.assignee || "";
+        document.getElementById("caseState").value = found?.state || "Open";
+        document.getElementById("caseNotes").value = found?.notes || "";
+        renderInvestigations();
+      });
+    }
+
+    function renderAccounts() {
+      renderTable("accountsTable", [
+        { key: "account", label: "Account/Email", width: "26%" },
+        { key: "domain", label: "Domain", width: "18%" },
+        { key: "status", label: "Status", width: "12%", render: r => badge(r.status) },
+        { key: "source", label: "Source", width: "20%" },
+        { key: "created", label: "Created", width: "14%" },
+        { key: "links", label: "Search", render: r => `<div class="link-list"><a href="https://www.google.com/search?q=${encodeURIComponent(r.account)}" target="_blank" rel="noopener noreferrer">Google</a><a href="https://www.google.com/search?q=${encodeURIComponent(`${r.account} ${r.domain}`)}" target="_blank" rel="noopener noreferrer">Context</a></div>`, raw: true }
+      ], state.accounts);
+    }
+
+    function renderSettings() {
+      document.getElementById("settingTitle").value = state.settings.title || "";
+      document.getElementById("settingLogo").value = state.settings.logo || "";
+      document.getElementById("settingVirusTotal").value = state.settings.virusTotalApiKey || "";
+      document.getElementById("settingAutoScan").value = state.settings.autoScanMinutes || 0;
+      document.getElementById("settingSandbox").value = state.settings.sandboxUrl || "";
+      document.getElementById("settingWhois").value = state.settings.whoisUrl || "";
+      document.getElementById("settingBackendUrl").value = state.settings.backendApiUrl || "";
+      document.getElementById("settingDiscoveryProvider").value = state.settings.discoveryProvider || "custom";
+      document.getElementById("settingDiscoveryApi").value = state.settings.discoveryApiUrl || "";
+      document.getElementById("settingDiscoveryKey").value = state.settings.discoveryApiKey || "";
+    }
+
+    function renderDomainOptions() {
+      const select = document.getElementById("scanProtected");
+      if (!select) return;
+      select.innerHTML = state.domains.map(domain => `
+        <option value="${escapeHtml(domain.id)}">${escapeHtml(domain.domain)}</option>
+      `).join("");
+      if (state.domains.length > 0) {
+        if (![...select.options].some(opt => opt.value === select.value)) {
+          select.value = state.domains[0].id;
+        }
+      }
+    }
+
+    function applySettings() {
+      const title = state.settings.title || "Domain Impersonation Detection System";
+      const logo = state.settings.logo || "DIDS";
+      document.title = title;
+      document.getElementById("brandTitle").textContent = logo;
+      document.getElementById("brandSubtitle").textContent = title;
+    }
+
+    function renderAudit() {
+      renderTable("auditTable", [
+        { key: "actor", label: "Actor", width: "12%" },
+        { key: "action", label: "Action", width: "20%" },
+        { key: "details", label: "Details", width: "48%" },
+        { key: "created", label: "Created" }
+      ], state.audit);
+    }
+
+    function addDomain() {
+      const domain = normalizeDomain(document.getElementById("domainInput").value);
+      const brand = document.getElementById("brandInput").value.trim();
+      if (!domain.includes(".") || !brand) return toast("Enter a valid domain and brand.");
+      const owner = document.getElementById("ownerInput").value.trim();
+      const organisationName = document.getElementById("organisationNameInput").value.trim();
+      const priority = document.getElementById("priorityInput").value;
+      const validUrls = parseList(document.getElementById("validUrlsInput").value).map(normalizeDomain);
+      const criticalServices = parseList(document.getElementById("criticalServicesInput").value);
+      const mode = document.getElementById("orgModeInput").value;
+
+      if (editingDomainId) {
+        const existing = state.domains.find(d => d.id === editingDomainId);
+        if (!existing) return resetDomainForm();
+        if (state.domains.some(d => d.domain === domain && d.id !== editingDomainId)) return toast("That protected domain already exists.");
+        Object.assign(existing, { domain, brand, owner, organisationName, priority, validUrls, criticalServices, mode });
+        log("update protected domain", domain);
+        toast("Protected domain updated.");
+        resetDomainForm();
+        renderAll();
+        return;
+      }
+
+      const existing = state.domains.find(d => d.domain === domain);
+      if (existing) {
+        editDomain(existing.id);
+        return toast("That protected domain already exists. Loaded existing record for editing.");
+      }
+
+      state.domains.push({
+        id: uid("dom"),
+        domain,
+        brand,
+        owner,
+        organisationName,
+        priority,
+        validUrls,
+        criticalServices,
+        mode,
+        created: now()
+      });
+      resetDomainForm();
+      log("add protected domain", domain);
+      renderAll();
+      toast("Protected domain added.");
+    }
+
+    function deleteDomain(id) {
+      const domain = state.domains.find(d => d.id === id);
+      if (!domain || !confirm(`Delete ${domain.domain} and related records?`)) return;
+      const detectionIds = state.detections.filter(d => d.protectedId === id).map(d => d.id);
+      state.domains = state.domains.filter(d => d.id !== id);
+      state.detections = state.detections.filter(d => d.protectedId !== id);
+      state.alerts = state.alerts.filter(a => !detectionIds.includes(a.detectionId));
+      state.investigations = state.investigations.filter(c => !detectionIds.includes(c.detectionId));
+      log("delete protected domain", domain.domain);
+      renderAll();
+    }
+
+    function runScan() {
+      const protectedId = document.getElementById("scanProtected").value;
+      const protectedDomain = state.domains.find(d => d.id === protectedId);
+      if (!protectedDomain) return toast("Add a protected domain first.");
+      const searchedUrl = document.getElementById("searchedUrlInput").value.trim();
+      const rawCandidates = document.getElementById("candidateInput").value.split(/\r?\n|,/).map(v => v.trim()).filter(Boolean);
+      let submitted = [searchedUrl, ...rawCandidates].filter(Boolean);
+      if (isPlainKeyword(searchedUrl) && !rawCandidates.length) {
+        submitted = uniqueList([searchedUrl, ...generateCandidates(searchedUrl)]);
+      }
+      if (!submitted.length) return toast("Add a searched URL or candidate domains to scan.");
+      updateScanCycle(0);
+      const evidence = {
+        content: document.getElementById("contentEvidenceInput").value,
+        accounts: document.getElementById("accountEvidenceInput").value,
+        reference: document.getElementById("phishingReferenceInput").value
+      };
+      const candidates = [];
+      const seen = new Set();
+      submitted.forEach(raw => {
+        const domain = normalizeDomain(raw);
+        if (!domain || seen.has(domain)) return;
+        seen.add(domain);
+        candidates.push({ searchedUrl: displayUrl(raw), domain });
+      });
+      updateScanCycle(1);
+      updateScanCycle(2);
+      let createdCount = 0;
+      candidates.forEach(item => {
+        const candidate = item.domain;
+        const result = analyze(protectedDomain, candidate, evidence);
+        const inboxEntry = {
+          id: uid("inbox"),
+          searchedUrl: item.searchedUrl,
+          normalizedDomain: candidate,
+          protectedDomain: protectedDomain.domain,
+          risk: result.risk,
+          decision: result.decision,
+          severity: result.severity,
+          attackType: result.attackType,
+          reasonDetails: result.reasonDetails,
+          reasons: result.reasons,
+          created: now()
+        };
+        state.inbox.unshift(inboxEntry);
+        let record = state.detections.find(d => d.protectedId === protectedId && d.domain === candidate);
+        if (!record) {
+          record = {
+            id: uid("det"),
+            protectedId,
+            protectedDomain: protectedDomain.domain,
+            brand: protectedDomain.brand,
+            searchedUrl: item.searchedUrl,
+            domain: candidate,
+            status: "New",
+            created: now()
+          };
+          state.detections.push(record);
+          createdCount++;
+        }
+        Object.assign(record, result, { searchedUrl: item.searchedUrl, updated: now() });
+        parseList(evidence.accounts).forEach(account => upsertAccount(account, protectedDomain.domain, "Unknown", `Scan evidence for ${candidate}`));
+        if (result.risk >= 60 && result.decision === "Suspicious" && !state.alerts.some(a => a.detectionId === record.id && a.status !== "Closed")) {
+          const alert = {
+            id: uid("alert"),
+            detectionId: record.id,
+            severity: result.severity,
+            title: `${result.severity} impersonation risk: ${candidate}`,
+            message: `${candidate} scored ${result.risk}/100 as ${result.attackType}. Reason: ${result.reasons}`,
+            status: "Open",
+            created: now()
+          };
+          state.alerts.unshift(alert);
+          toast(`Critical/high detection: ${candidate}`);
+          state.investigations.unshift({
+            id: uid("case"),
+            detectionId: record.id,
+            domain: candidate,
+            assignee: "",
+            state: "Open",
+            notes: `Auto-created from high-risk detection.\n\nReason: ${result.reasons}`,
+            updated: now()
+          });
+        }
+      });
+      updateScanCycle(3);
+      updateScanCycle(4);
+      state.inbox = state.inbox.slice(0, 500);
+      document.getElementById("scanStatus").textContent = `Scan complete: ${candidates.length} candidates analyzed`;
+      log("scan complete", `${candidates.length} candidates analyzed, ${createdCount} new detections`);
+      renderAll();
+      toast("Scan complete.");
+    }
+
+    function updateScanCycle(index) {
+      document.querySelectorAll("#scanCycle span").forEach((step, i) => step.classList.toggle("active", i <= index));
+    }
+
+    function upsertAccount(account, domain, status, source) {
+      account = String(account || "").trim();
+      if (!account) return;
+      const existing = state.accounts.find(row => row.account.toLowerCase() === account.toLowerCase() && row.domain === domain);
+      if (existing) {
+        existing.status = existing.status === "Valid" ? "Valid" : status;
+        existing.source = existing.source || source;
+        return;
+      }
+      state.accounts.unshift({ id: uid("acct"), account, domain, status, source, created: now() });
+    }
+
+    function addAccount() {
+      const account = document.getElementById("accountInput").value.trim();
+      const domain = normalizeDomain(document.getElementById("accountDomainInput").value);
+      if (!account || !domain) return toast("Enter an account/email and organisation domain.");
+      upsertAccount(account, domain, document.getElementById("accountStatusInput").value, document.getElementById("accountSourceInput").value.trim() || "Manual");
+      ["accountInput", "accountDomainInput", "accountSourceInput"].forEach(id => document.getElementById(id).value = "");
+      log("add account", account);
+      renderAll();
+      toast("Account recorded.");
+    }
+
+    function markDetection(id, status) {
+      const record = state.detections.find(d => d.id === id);
+      if (!record) return;
+      record.status = status;
+      record.decision = status === "Valid" ? "Valid" : "Confirmed phishing";
+      record.severity = status === "Valid" ? "Low" : "Critical";
+      record.risk = status === "Valid" ? 1 : Math.max(record.risk || 0, 90);
+      record.updated = now();
+      record.reasons = `${record.reasons || ""} | Analyst marked as ${status}.`.replace(/^ \| /, "");
+      if (status === "Valid") {
+        const domain = state.domains.find(d => d.id === record.protectedId);
+        if (domain && !validDomainsFor(domain).includes(record.domain)) domain.validUrls.push(record.domain);
+      }
+      if (status === "Known phishing" && !state.alerts.some(a => a.detectionId === record.id && a.status !== "Closed")) {
+        state.alerts.unshift({
+          id: uid("alert"),
+          detectionId: record.id,
+          severity: "Critical",
+          title: `Known phishing URL: ${record.domain}`,
+          message: `${record.domain} was marked red as known phishing. Reason/reference: ${record.phishingReference || record.reasons || "Analyst confirmation"}`,
+          status: "Open",
+          created: now()
+        });
+      }
+      log("mark detection", `${record.domain} -> ${status}`);
+      renderAll();
+    }
+
+    function bindMarkButtons() {
+      document.querySelectorAll("[data-mark-valid]").forEach(btn => btn.addEventListener("click", ev => {
+        ev.stopPropagation();
+        markDetection(btn.dataset.markValid, "Valid");
+      }));
+      document.querySelectorAll("[data-mark-phishing]").forEach(btn => btn.addEventListener("click", ev => {
+        ev.stopPropagation();
+        markDetection(btn.dataset.markPhishing, "Known phishing");
+      }));
+    }
+
+    function updateAlert(status) {
+      if (!selectedAlertId) return toast("Select an alert first.");
+      const alert = state.alerts.find(a => a.id === selectedAlertId);
+      if (!alert) return;
+      alert.status = status;
+      log("update alert", `${alert.title} -> ${status}`);
+      renderAll();
+    }
+
+    function saveCase() {
+      if (!selectedCaseId) return toast("Select an investigation first.");
+      const found = state.investigations.find(c => c.id === selectedCaseId);
+      if (!found) return;
+      found.assignee = document.getElementById("caseAssignee").value.trim();
+      found.state = document.getElementById("caseState").value;
+      found.notes = document.getElementById("caseNotes").value.trim();
+      found.updated = now();
+      log("save investigation", found.domain);
+      renderAll();
+      toast("Investigation saved.");
+    }
+
+    function generateReport() {
+      const detections = [...state.detections].sort((a, b) => b.risk - a.risk);
+      const critical = detections.filter(d => d.risk >= 80);
+      const high = detections.filter(d => d.risk >= 60 && d.risk < 80);
+      const valid = detections.filter(d => d.decision === "Valid" || d.status === "Valid");
+      const accounts = state.accounts || [];
+      const lines = [
+        `${state.settings.title || "Domain Impersonation Detection System"} Forensic Report`,
+        `Generated: ${now()}`,
+        "Prepared for: SOC / Legal / Incident Response",
+        "Developer: TUMUSIIME MARK | 0780427684 | tumusiimemac@gmail.com",
+        "",
+        "Executive Summary",
+        `Protected domains: ${state.domains.length}`,
+        `Total detections: ${detections.length}`,
+        `Open alerts: ${state.alerts.filter(a => a.status !== "Closed").length}`,
+        `Critical risk detections: ${critical.length}`,
+        `High risk detections: ${high.length}`,
+        `Known valid URLs: ${state.domains.reduce((sum, domain) => sum + validDomainsFor(domain).length, 0)}`,
+        `Accounts observed: ${accounts.length}`,
+        "",
+        "Top findings:"
+      ];
+      if (!detections.length) lines.push("- No detections have been recorded yet.");
+      detections.slice(0, 10).forEach(d => {
+        lines.push(`- ${d.searchedUrl || d.domain} checked against ${d.protectedDomain} (${d.brand}): ${d.risk}/100, ${d.decision}, ${d.attackType}.`);
+        lines.push(`  Reason: ${d.reasons || d.indicators}`);
+        lines.push(`  WHOIS/creation date: ${d.createdDate || "WHOIS enrichment required"}`);
+        lines.push(`  SSL: ${d.ssl || "Certificate enrichment required"}`);
+        lines.push(`  Active status: ${d.activeStatus || "Ping/sandbox enrichment required"}`);
+        if (d.phishingReference) lines.push(`  Known phishing reference: ${d.phishingReference}`);
+      });
+      lines.push("", "Valid URL Inventory:");
+      state.domains.forEach(domain => validDomainsFor(domain).forEach(url => lines.push(`- ${url} (${domain.brand}) marked valid/approved.`)));
+      if (!valid.length && !state.domains.some(domain => validDomainsFor(domain).length)) lines.push("- No approved URLs recorded.");
+      lines.push("", "Accounts Panel:");
+      if (!accounts.length) lines.push("- No organisation accounts or emails recorded.");
+      accounts.slice(0, 20).forEach(account => lines.push(`- ${account.account} | ${account.domain} | ${account.status} | source: ${account.source}`));
+      lines.push(
+        "",
+        "Evidence Handling Notes:",
+        "- Direct visits to suspicious URLs should be performed through a sandbox or isolated browser.",
+        "- WHOIS, creation date, resolver, SSL, ping, Google/social, and VirusTotal enrichment links are generated from the detection table.",
+        "- Analyst markings are retained in the audit log for chain-of-custody review.",
+        "",
+        "Recommended SOC actions:",
+        "- Validate critical and high detections using resolver, WHOIS, certificate, sandbox, and VirusTotal tooling.",
+        "- Preserve screenshots, response headers, DNS answers, registrar data, and certificate details for court exhibits.",
+        "- Escalate confirmed phishing infrastructure for takedown.",
+        "- Close false positives only after adding investigation notes or marking the URL valid."
+      );
+      lastReportText = lines.join("\n");
+      document.getElementById("reportOutput").textContent = lastReportText;
+      log("generate report", "Executive summary generated");
+      renderAll();
+    }
+
+    function download(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCsv() {
+      const columns = ["searchedUrl", "protectedDomain", "brand", "domain", "risk", "severity", "decision", "similarity", "attackType", "status", "createdDate", "activeStatus", "ssl", "whois", "virusTotal", "website", "content", "phishingReference", "indicators", "reasons", "updated"];
+      const rows = state.detections.map(row => columns.map(col => `"${String(row[col] ?? "").replace(/"/g, '""')}"`).join(","));
+      download("dids-detections.csv", [columns.join(","), ...rows].join("\n"), "text/csv");
+      log("export csv", `${state.detections.length} detections`);
+      renderAll();
+    }
+
+    function exportTxt() {
+      if (!lastReportText) generateReport();
+      download("dids-forensic-report.txt", lastReportText || document.getElementById("reportOutput").textContent, "text/plain");
+      log("export txt", "Forensic report exported");
+      renderAll();
+    }
+
+    function saveSettings() {
+      state.settings.title = document.getElementById("settingTitle").value.trim() || "Domain Impersonation Detection System";
+      state.settings.logo = document.getElementById("settingLogo").value.trim() || "DIDS";
+      state.settings.virusTotalApiKey = document.getElementById("settingVirusTotal").value.trim();
+      state.settings.discoveryProvider = document.getElementById("settingDiscoveryProvider").value || "custom";
+      state.settings.discoveryApiUrl = document.getElementById("settingDiscoveryApi").value.trim();
+      state.settings.discoveryApiKey = document.getElementById("settingDiscoveryKey").value.trim();
+      state.settings.autoScanMinutes = Math.max(0, Number(document.getElementById("settingAutoScan").value || 0));
+      state.settings.sandboxUrl = document.getElementById("settingSandbox").value.trim() || "https://urlscan.io/search/#";
+      state.settings.whoisUrl = document.getElementById("settingWhois").value.trim() || "https://lookup.icann.org/en/lookup";
+      state.settings.backendApiUrl = document.getElementById("settingBackendUrl").value.trim() || "http://127.0.0.1:8000";
+      log("save settings", "System settings updated");
+      renderAll();
+      toast("Settings saved.");
+    }
+
+    function setupAutoScan() {
+      if (autoScanTimer) clearInterval(autoScanTimer);
+      const minutes = Number(state.settings.autoScanMinutes || 0);
+      if (minutes <= 0) return;
+      autoScanTimer = setInterval(runMonitoringScan, minutes * 60 * 1000);
+    }
+
+    function runMonitoringScan() {
+      const protectedDomain = state.domains[0];
+      if (!protectedDomain) return toast("Add a protected domain before monitoring.");
+      document.getElementById("scanProtected").value = protectedDomain.id;
+      document.getElementById("candidateInput").value = generateCandidates(protectedDomain.domain).join("\n");
+      document.getElementById("searchedUrlInput").value = "";
+      runScan();
+      log("auto scan", `Monitoring scan for ${protectedDomain.domain}`);
+    }
+
+    function loadDiscoverySeeds() {
+      const seeds = document.getElementById("discoverySeedsInput").value
+        .split(/\r?\n|,/) 
+        .map(v => normalizeDomain(v))
+        .filter(Boolean);
+      if (!seeds.length) return toast("Paste real discovered URLs into Online Discovery Seeds first.");
+      document.getElementById("candidateInput").value = uniqueList(seeds).join("\n");
+      document.getElementById("scanStatus").textContent = `Loaded ${seeds.length} discovered URLs for scanning.`;
+      log("load discovery seeds", `${seeds.length} URLs loaded from discovery seeds`);
+      renderAll();
+    }
+
+    async function discoverLiveUrls() {
+      const protectedDomain = state.domains.find(d => d.id === document.getElementById("scanProtected").value);
+      if (!protectedDomain) return toast("Add a protected domain first.");
+      const provider = state.settings.discoveryProvider || "custom";
+      const endpoint = resolveDiscoveryEndpoint(provider, protectedDomain.domain, state.settings.discoveryApiUrl);
+      if (!endpoint) return toast("Configure a Discovery API URL or set a supported provider in settings first.");
+      const url = endpoint.includes("?") ? `${endpoint}&domain=${encodeURIComponent(protectedDomain.domain)}` : `${endpoint}?domain=${encodeURIComponent(protectedDomain.domain)}`;
+      document.getElementById("scanStatus").textContent = "Discovering live URLs...";
+      try {
+        const headers = {};
+        if (provider === "urlscan") headers["API-Key"] = state.settings.discoveryApiKey;
+        else if (provider === "virustotal") headers["x-apikey"] = state.settings.discoveryApiKey;
+        else if (state.settings.discoveryApiKey) headers.Authorization = `Bearer ${state.settings.discoveryApiKey}`;
+        const response = await fetch(url, { headers });
+        if (!response.ok) throw new Error(`Discovery API returned ${response.status}`);
+        const data = await response.json();
+        const seeds = parseDiscoveryResponse(provider, data);
+        const normalized = uniqueList(seeds.map(normalizeDomain).filter(Boolean));
+        if (!normalized.length) return toast("Discovery API returned no URLs.");
+        document.getElementById("candidateInput").value = normalized.join("\n");
+        document.getElementById("scanStatus").textContent = `Discovered ${normalized.length} live URLs.`;
+        log("discover live urls", `${normalized.length} URLs loaded from discovery API`);
+        renderAll();
+      } catch (error) {
+        console.error(error);
+        toast("Live discovery failed. Check the API endpoint and key.");
+        document.getElementById("scanStatus").textContent = "Live discovery failed.";
+      }
+    }
+
+    function resolveDiscoveryEndpoint(provider, domain, customUrl) {
+      if (provider === "urlscan") {
+        return `https://urlscan.io/api/v1/search/?q=domain:${encodeURIComponent(domain)}`;
+      }
+      if (provider === "virustotal") {
+        return `https://www.virustotal.com/api/v3/search?query=domain:${encodeURIComponent(domain)}`;
+      }
+      return String(customUrl || "").trim();
+    }
+
+    function parseDiscoveryResponse(provider, data) {
+      if (provider === "urlscan") {
+        return Array.isArray(data.results)
+          ? data.results.map(item => item?.task?.url || item?.page?.url || item?.page?.domain || item?.task?.domain).filter(Boolean)
+          : [];
+      }
+      if (provider === "virustotal") {
+        return Array.isArray(data?.data)
+          ? data.data.map(item => item?.id || item?.attributes?.url).filter(Boolean)
+          : [];
+      }
+      if (Array.isArray(data.urls)) return data.urls;
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data.results)) return data.results;
+      if (Array.isArray(data.items)) return data.items;
+      return [];
+    }
+
+    function openGoogleDiscovery() {
+      const protectedDomain = state.domains.find(d => d.id === document.getElementById("scanProtected").value);
+      if (!protectedDomain) return toast("Add a protected domain first.");
+      const query = encodeURIComponent(`"${protectedDomain.domain}" phishing OR login OR portal OR verify OR account`);
+      window.open(`https://www.google.com/search?q=${query}`, "_blank");
+    }
+
+    function clearCurrentResults() {
+      state.inbox = [];
+      document.getElementById("scanStatus").textContent = "Current results cleared.";
+      log("clear current results", "Inbox cleared");
+      renderAll();
+    }
+
+    function clearScanHistory() {
+      if (!confirm("Clear all scan history, detections, alerts, and investigations?")) return;
+      state.detections = [];
+      state.alerts = [];
+      state.investigations = [];
+      state.inbox = [];
+      document.getElementById("scanStatus").textContent = "Scan history cleared.";
+      log("clear scan history", "Detections, alerts, investigations, and inbox cleared");
+      renderAll();
+    }
+
+    function updateClock() {
+      const text = new Date().toLocaleString();
+      document.getElementById("clock").textContent = text;
+      document.getElementById("topClock").textContent = text;
+    }
+
+    function toast(message) {
+      const el = document.getElementById("toast");
+      el.textContent = message;
+      el.classList.add("show");
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => el.classList.remove("show"), 2200);
+    }
+
+    document.getElementById("addDomainBtn").addEventListener("click", addDomain);
+    document.getElementById("cancelDomainEditBtn").addEventListener("click", resetDomainForm);
+    document.getElementById("generateBtn").addEventListener("click", () => {
+      const protectedDomain = state.domains.find(d => d.id === document.getElementById("scanProtected").value);
+      if (!protectedDomain) return toast("Add a protected domain first.");
+      const seeds = document.getElementById("discoverySeedsInput").value.trim();
+      const searchedUrl = document.getElementById("searchedUrlInput").value.trim();
+      if (seeds) {
+        loadDiscoverySeeds();
+        return;
+      }
+      if (isPlainKeyword(searchedUrl)) {
+        document.getElementById("candidateInput").value = generateCandidates(searchedUrl).join("\n");
+        document.getElementById("scanStatus").textContent = "Generated similar keyword candidate domains.";
+        return;
+      }
+      document.getElementById("candidateInput").value = generateCandidates(protectedDomain.domain).join("\n");
+      document.getElementById("scanStatus").textContent = "Generated candidate typo and lookalike domains.";
+    });
+    document.getElementById("discoverLiveBtn").addEventListener("click", discoverLiveUrls);
+    document.getElementById("loadSeedsBtn").addEventListener("click", loadDiscoverySeeds);
+    document.getElementById("scanBtn").addEventListener("click", runScan);
+    document.getElementById("clearCandidatesBtn").addEventListener("click", () => document.getElementById("candidateInput").value = "");
+    document.getElementById("googleDiscoveryBtn").addEventListener("click", openGoogleDiscovery);
+    document.getElementById("clearCurrentResultsBtn").addEventListener("click", clearCurrentResults);
+    document.getElementById("clearHistoryBtn").addEventListener("click", clearScanHistory);
+    document.getElementById("ackAlertBtn").addEventListener("click", () => updateAlert("Acknowledged"));
+    document.getElementById("closeAlertBtn").addEventListener("click", () => updateAlert("Closed"));
+    document.getElementById("saveCaseBtn").addEventListener("click", saveCase);
+    document.getElementById("addAccountBtn").addEventListener("click", addAccount);
+    document.getElementById("reportBtn").addEventListener("click", generateReport);
+    document.getElementById("csvBtn").addEventListener("click", exportCsv);
+    document.getElementById("txtBtn").addEventListener("click", exportTxt);
+    document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
+    document.getElementById("runAutoScanBtn").addEventListener("click", runMonitoringScan);
+    document.getElementById("exportStateBtn").addEventListener("click", () => {
+      download("dids-state.json", JSON.stringify(state, null, 2), "application/json");
+      log("export json", "Full local state exported");
+      renderAll();
+    });
+    document.querySelectorAll("[data-action='go']").forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.target)));
+
+    updateClock();
+    setInterval(updateClock, 1000);
+    renderAll();
+  </script>
+
+  <div id="inspectModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div>
+          <strong>URL Inspection</strong>
+          <div id="inspectModalSubtitle" style="font-size:12px;color:#64717f;">Review remote page content and domain relationships.</div>
+        </div>
+        <button class="modal-close" type="button" onclick="closeInspectModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-row"><strong>URL</strong><div id="inspectUrlText">-</div></div>
+        <div class="modal-row"><strong>Protected Domain</strong><div id="inspectProtectedText">-</div></div>
+        <div class="modal-row"><strong>Resolved Host</strong><div id="inspectResolvedText">-</div></div>
+        <div class="modal-row"><strong>HTTP Status</strong><div id="inspectStatusText">-</div></div>
+        <div class="modal-row"><strong>Page Title / Meta</strong><div id="inspectTitleText">-</div></div>
+        <div class="modal-row"><strong>Detected Indicators</strong><div id="inspectIndicatorsText">-</div></div>
+        <div class="modal-row"><strong>Remarks</strong><div id="inspectRemarksText">-</div></div>
+        <div class="modal-note" id="inspectModalNote">This inspection uses the configured Python backend scanner. Ensure the backend is running.</div>
+      </div>
+      <div class="modal-footer">
+        <button class="primary" type="button" onclick="closeInspectModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
